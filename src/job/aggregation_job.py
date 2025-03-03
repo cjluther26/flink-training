@@ -5,7 +5,7 @@ from pyflink.table.window import Tumble
 
 
 def create_events_aggregated_sink(t_env):
-    table_name = 'processed_events_aggregated_source'
+    table_name = 'processed_events_aggregated'
     sink_ddl = f"""
         CREATE TABLE {table_name} (
             event_hour TIMESTAMP(3),
@@ -22,19 +22,14 @@ def create_events_aggregated_sink(t_env):
     t_env.execute_sql(sink_ddl)
     return table_name
 
-def create_processed_events_source_kafka(t_env):
-    table_name = "process_events_kafka"
-    pattern = "yyyy-MM-dd HH:mm:ss"
-    sink_ddl = f"""
+def create_events_source_kafka(t_env):
+    table_name = "events"
+    source_ddl = f"""
         CREATE TABLE {table_name} (
-            ip VARCHAR,
-            event_timestamp VARCHAR,
-            referrer VARCHAR,
-            host VARCHAR,
-            url VARCHAR,
-            geodata VARCHAR,
-            window_timestamp AS TO_TIMESTAMP(event_timestamp, '{pattern}'),
-            WATERMARK FOR window_timestamp AS window_timestamp - INTERVAL '15' SECOND
+            test_data INTEGER,
+            event_timestamp BIGINT,
+            event_watermark AS TO_TIMESTAMP_LTZ(event_timestamp, 3),
+            WATERMARK FOR event_watermark AS event_watermark - INTERVAL '15' SECOND
         ) WITH (
             'connector' = 'kafka',
             'properties.bootstrap.servers' = 'redpanda-1:29092',
@@ -44,7 +39,7 @@ def create_processed_events_source_kafka(t_env):
             'format' = 'json'
         );
         """
-    t_env.execute_sql(sink_ddl)
+    t_env.execute_sql(source_ddl)
     return table_name
 
 
@@ -60,19 +55,19 @@ def log_aggregation():
 
     try:
         # Create Kafka table
-        source_table = create_processed_events_source_kafka(t_env)
+        source_table = create_events_source_kafka(t_env)
         aggregated_table = create_events_aggregated_sink(t_env)
         t_env.from_path(source_table)\
             .window(
-            Tumble.over(lit(5).minutes).on(col("window_timestamp")).alias("w")
+            Tumble.over(lit(1).minutes).on(col("window_timestamp")).alias("w")
         ).group_by(
             col("w"),
-            col("host")
+            col("test_data")
         ) \
             .select(
                     col("w").start.alias("event_hour"),
-                    col("host"),
-                    col("host").count.alias("num_hits")
+                    col("test_data"),
+                    col("test_data").count.alias("num_hits")
             ) \
             .execute_insert(aggregated_table).wait()
 

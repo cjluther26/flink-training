@@ -55,8 +55,7 @@ cd apache-flink-training
     ```
     taskmanager Successful registration at resource manager akka.tcp://flink@jobmanager:6123/user/rpc/resourcemanager_* under registration id <id_number>
     ```
-2. Make sure to run `sql/init.sql` on the postgres database from Week 1 and2
-3. Now that the Flink cluster is up and running, it's time to finally run the PyFlink job! :smile:
+2. Now that the Flink cluster is up and running, it's time to finally run the PyFlink job! :smile:
 
     ```bash
     make job
@@ -67,25 +66,7 @@ cd apache-flink-training
 
     After about a minute, you should see a prompt that the job's been submitted (e.g., `Job has been submitted with JobID <job_id_number>`). Now go back to the [Flink UI](http://localhost:8081/#/job/running) to see the job running! :tada:
 
-4. Trigger an event from the Kafka source by visiting [www.zachwilson.tech](https://www.zachwilson.tech/) and then query the `processed_events` table in your postgreSQL database to confirm the data/events were added.
-
-    ```bash
-    make psql
-    # or see `Makefile` to execute the command manually in your terminal or command prompt
-
-    # expected output:
-    docker exec -it eczachly-flink-postgres psql -U postgres -d postgres
-    psql (15.3 (Debian 15.3-1.pgdg110+1))
-    Type "help" for help.
-
-    postgres=# SELECT COUNT(*) FROM processed_events;
-    count 
-    -------
-    739
-    (1 row)
-    ```
-
-5. When you're done, you can stop and/or clean up the Docker resources by running the commands below.
+3. When you're done, you can stop and/or clean up the Docker resources by running the commands below.
 
     ```bash
     make stop # to stop running services in docker compose

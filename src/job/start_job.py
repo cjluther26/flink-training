@@ -1,10 +1,5 @@
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import EnvironmentSettings, DataTypes, TableEnvironment, StreamTableEnvironment
-from pyflink.table.udf import ScalarFunction, udf
-import os
-import json
-import requests
-from pyflink.table import EnvironmentSettings, DataTypes, TableEnvironment, StreamTableEnvironment
 
 
 def create_processed_events_sink_postgres(t_env):
@@ -28,7 +23,7 @@ def create_processed_events_sink_postgres(t_env):
 
 def create_events_source_kafka(t_env):
     table_name = "events"
-    pattern = "yyyy-MM-dd''T''HH:mm:ss.SSS''Z''"
+    pattern = "yyyy-MM-dd HH:mm:ss.SSS"
     source_ddl = f"""
         CREATE TABLE {table_name} (
             test_data INTEGER,
