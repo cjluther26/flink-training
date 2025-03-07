@@ -29,13 +29,13 @@ def create_events_source_kafka(t_env):
             test_data INTEGER,
             event_timestamp BIGINT,
             event_watermark AS TO_TIMESTAMP_LTZ(event_timestamp, 3),
-            WATERMARK FOR event_watermark AS event_watermark - INTERVAL '15' SECOND
+            WATERMARK for event_watermark as event_watermark - INTERVAL '5' SECOND
         ) WITH (
             'connector' = 'kafka',
             'properties.bootstrap.servers' = 'redpanda-1:29092',
             'topic' = 'test-topic',
-            'scan.startup.mode' = 'earliest-offset',
-            'properties.auto.offset.reset' = 'earliest',
+            'scan.startup.mode' = 'latest-offset',
+            'properties.auto.offset.reset' = 'latest',
             'format' = 'json'
         );
         """

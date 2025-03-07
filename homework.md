@@ -37,35 +37,6 @@ CREATE TABLE processed_events (
 ```
 
 
-## Sending the taxi data
-
-Now let's send our actual data:
-
-* Read the green csv.gz file
-* We will only need these columns:
-  * `'lpep_pickup_datetime',`
-  * `'lpep_dropoff_datetime',`
-  * `'PULocationID',`
-  * `'DOLocationID',`
-  * `'passenger_count',`
-  * `'trip_distance',`
-  * `'tip_amount'`
-
-Iterate over the records in the dataframe
-
-```python
-for row in df_green.itertuples(index=False):
-    row_dict = {col: getattr(row, col) for col in row._fields}
-    print(row_dict)
-    break
-
-    # TODO implement sending the data here
-```
-
-Note: this way of iterating over the records is more efficient compared
-to `iterrows`
-
-
 ## Question 1. Connecting to the Kafka server
 
 We need to make sure we can connect to the server, so
@@ -102,12 +73,30 @@ producer = KafkaProducer(
 producer.bootstrap_connected()
 ```
 
-
 ## Question 3: Sending the Trip Data
 
-* Create a topic `green-trips` and send the data there
+* Read the green csv.gz file
+* We will only need these columns:
+  * `'lpep_pickup_datetime',`
+  * `'lpep_dropoff_datetime',`
+  * `'PULocationID',`
+  * `'DOLocationID',`
+  * `'passenger_count',`
+  * `'trip_distance',`
+  * `'tip_amount'`
+
+* Create a topic `green-trips` and send the data there with `load_taxi_data.py`
 * How much time in seconds did it take? (You can round it to a whole number)
 * Make sure you don't include sleeps in your code
+
+## Question 4: Build a Sessionization Window
+
+* Copy `aggregation_job.py` and rename it to `session_job.py`
+* Have it read from `green-trips` fixing the schema
+* Use a [session window](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/operators/windows/) with a gap of 5 minutes
+* Use `lpep_dropoff_datetime` time as your watermark with a 5 second tolerance
+* Which pickup and drop off locations have the longest unbroken streak of taxi trips?
+
 
 
 

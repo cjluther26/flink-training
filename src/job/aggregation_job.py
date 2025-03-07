@@ -1,15 +1,16 @@
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import EnvironmentSettings, DataTypes, TableEnvironment, StreamTableEnvironment
-from pyflink.table.expressions import lit, col
-from pyflink.table.window import Tumble
-
+from pyflink.common.watermark_strategy import WatermarkStrategy
+from pyflink.common.time import Duration
 
 def create_events_aggregated_sink(t_env):
     table_name = 'processed_events_aggregated'
     sink_ddl = f"""
         CREATE TABLE {table_name} (
             event_hour TIMESTAMP(3),
-            num_hits BIGINT
+            test_data INT,
+            num_hits BIGINT,
+            PRIMARY KEY (event_hour, test_data) NOT ENFORCED
         ) WITH (
             'connector' = 'jdbc',
             'url' = 'jdbc:postgresql://postgres:5432/postgres',
@@ -29,7 +30,7 @@ def create_events_source_kafka(t_env):
             test_data INTEGER,
             event_timestamp BIGINT,
             event_watermark AS TO_TIMESTAMP_LTZ(event_timestamp, 3),
-            WATERMARK FOR event_watermark AS event_watermark - INTERVAL '15' SECOND
+            WATERMARK for event_watermark as event_watermark - INTERVAL '1' SECOND
         ) WITH (
             'connector' = 'kafka',
             'properties.bootstrap.servers' = 'redpanda-1:29092',
@@ -46,30 +47,40 @@ def create_events_source_kafka(t_env):
 def log_aggregation():
     # Set up the execution environment
     env = StreamExecutionEnvironment.get_execution_environment()
-    env.enable_checkpointing(10)
+    env.enable_checkpointing(10 * 1000)
     env.set_parallelism(3)
 
     # Set up the table environment
     settings = EnvironmentSettings.new_instance().in_streaming_mode().build()
     t_env = StreamTableEnvironment.create(env, environment_settings=settings)
 
+    watermark_strategy = (
+        WatermarkStrategy
+        .for_bounded_out_of_orderness(Duration.of_seconds(5))
+        .with_timestamp_assigner(
+            # This lambda is your timestamp assigner:
+            #   event -> The data record
+            #   timestamp -> The previously assigned (or default) timestamp
+            lambda event, timestamp: event[2]  # We treat the second tuple element as the event-time (ms).
+        )
+    )
     try:
         # Create Kafka table
         source_table = create_events_source_kafka(t_env)
         aggregated_table = create_events_aggregated_sink(t_env)
-        t_env.from_path(source_table)\
-            .window(
-            Tumble.over(lit(1).minutes).on(col("window_timestamp")).alias("w")
-        ).group_by(
-            col("w"),
-            col("test_data")
-        ) \
-            .select(
-                    col("w").start.alias("event_hour"),
-                    col("test_data"),
-                    col("test_data").count.alias("num_hits")
-            ) \
-            .execute_insert(aggregated_table).wait()
+
+        t_env.execute_sql(f"""
+        INSERT INTO {aggregated_table}
+        SELECT
+            window_start as event_hour,
+            test_data,
+            COUNT(*) AS num_hits
+        FROM TABLE(
+            TUMBLE(TABLE {source_table}, DESCRIPTOR(event_watermark), INTERVAL '1' MINUTE)
+        )
+        GROUP BY window_start, test_data;
+        
+        """).wait()
 
     except Exception as e:
         print("Writing records from Kafka to JDBC failed:", str(e))
