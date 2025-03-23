@@ -14,6 +14,13 @@
 `Flink`
 - **source**: entity you're *reading* from!
 - **sink**: entity you're *dumping* into!
+- When Flink starts, it sets up a **`StreamExecutionEnvironment`**. 
+- You can configure this environment. One key way is that it can be set to either `in_streaming_mode()` or `in_batch_mode()` -- the first keeps the job running, listening for events, while the other is executed in batches (like a cron job in Airflow). 
+- Flink also has a **`StreamTableEnvironment`**. This is where the understanding of sources and sinks is done.
+- **Watermarking**: a watermark is a special event injected into a data stream that carries a timestamp, indicating the progress of event time and signaling when earlier events are considered to have arrived.
+    - *"Specifies the tolerance for out-of-sync events."*
+    - Ex. in an event stream of timestamps, a watermark with timestamp `10:00` indicates that all events with timestamps before or at `10:00` should have already arrived.
+
 
 `Kafka`
 - When reading from Kafka, you have to be cognizant of **offsets**. These keep track of how much data you've already read from the topic. In configuring a source from Kafka, you have **5 options** for `'scan.startup.mode'`, where we will focus on the *first 2*:
