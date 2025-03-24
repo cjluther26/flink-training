@@ -89,6 +89,7 @@ services:
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 15
         parallelism.default: 3
+        
   postgres:
     image: postgres:14
     restart: on-failure
