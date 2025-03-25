@@ -20,6 +20,8 @@
 - **Watermarking**: a watermark is a special event injected into a data stream that carries a timestamp, indicating the progress of event time and signaling when earlier events are considered to have arrived.
     - *"Specifies the tolerance for out-of-sync events."*
     - Ex. in an event stream of timestamps, a watermark with timestamp `10:00` indicates that all events with timestamps before or at `10:00` should have already arrived.
+- **Ok, I am going to need to spend more time understanding how *lateness* works in Flink...**
+
 
 
 `Kafka`
