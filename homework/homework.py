@@ -45,7 +45,7 @@ with urllib.request.urlopen(file_url) as response:
             # Filter for only the columns we want
             filtered_row = {key: row[key] for key in selected_columns if key in row}
             producer.send(topic_name, filtered_row)
-            print(f"Sent: {row}")
+            print(f"Sent: {filtered_row}")
 
 producer.flush()
 
